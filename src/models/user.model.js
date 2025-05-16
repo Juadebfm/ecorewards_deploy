@@ -2,6 +2,43 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Auto-generated MongoDB ID
+ *         name:
+ *           type: string
+ *           description: User's full name
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: User's unique email
+ *         password:
+ *           type: string
+ *           description: User's hashed password
+ *         role:
+ *           type: string
+ *           enum: [user, admin]
+ *           default: user
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *       example:
+ *         name: John Doe
+ *         email: john@example.com
+ *         role: user
+ */
+
 const UserSchema = new mongoose.Schema(
   {
     clerkId: {
