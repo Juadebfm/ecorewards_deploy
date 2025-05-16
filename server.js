@@ -7,6 +7,7 @@ const { errorHandler } = require("./src/middleware/error.middleware");
 const authRoutes = require("./src/routes/auth.routes");
 const clerkRoutes = require("./src/routes/clerk.routes");
 const { swaggerDocs } = require("./swagger");
+const cookieParser = require("cookie-parser");
 
 // Load env vars
 dotenv.config();
@@ -19,6 +20,8 @@ const app = express();
 
 // Body parser
 app.use(express.json());
+
+app.use(cookieParser());
 
 // Enable CORS
 app.use(cors());

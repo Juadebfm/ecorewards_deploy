@@ -1,5 +1,11 @@
 const express = require("express");
-const { register, login, getMe } = require("../controllers/auth.controller");
+const {
+  register,
+  login,
+  getMe,
+  refreshToken,
+  logout,
+} = require("../controllers/auth.controller");
 const { protect } = require("../middleware/auth.middleware");
 
 const router = express.Router();
@@ -9,6 +15,26 @@ const router = express.Router();
  * tags:
  *   name: Auth
  *   description: User authentication endpoints
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TokenResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         accessToken:
+ *           type: string
+ *           description: JWT access token for API authentication
+ *         refreshToken:
+ *           type: string
+ *           description: JWT refresh token for obtaining new access tokens
+ *         user:
+ *           $ref: '#/components/schemas/User'
  */
 
 /**
@@ -45,16 +71,7 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 token:
- *                   type: string
- *                   description: JWT authentication token
- *                 user:
- *                   $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/TokenResponse'
  *       400:
  *         description: Bad request - validation error
  *       409:
@@ -92,16 +109,7 @@ router.post("/register", register);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 token:
- *                   type: string
- *                   description: JWT authentication token
- *                 user:
- *                   $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/TokenResponse'
  *       401:
  *         description: Invalid credentials
  *       404:
@@ -137,5 +145,71 @@ router.post("/login", login);
  *         description: User not found
  */
 router.get("/me", protect, getMe);
+
+/**
+ * @swagger
+ * /api/v1/auth/refresh-token:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Auth]
+ *     description: Get a new access token using a valid refresh token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: The refresh token issued during login or registration
+ *     responses:
+ *       200:
+ *         description: Token refresh successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 accessToken:
+ *                   type: string
+ *                   description: New JWT access token
+ *       401:
+ *         description: Invalid or expired refresh token
+ */
+router.post("/refresh-token", refreshToken);
+
+/**
+ * @swagger
+ * /api/v1/auth/logout:
+ *   get:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     description: Invalidates the user's session and clears authentication cookies
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   example: {}
+ *       401:
+ *         description: Not authorized - No token provided
+ */
+router.get("/logout", protect, logout);
 
 module.exports = router;

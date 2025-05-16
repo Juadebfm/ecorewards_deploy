@@ -4,6 +4,7 @@ const {
   loginValidation,
 } = require("../validations/auth.validation");
 const User = require("../models/user.model");
+const { sendTokenResponse } = require("../utils/tokenUtils");
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
@@ -37,21 +38,8 @@ const register = asyncHandler(async (req, res) => {
     password,
   });
 
-  // Generate token
-  const token = user.getSignedJwtToken();
-
-  res.status(201).json({
-    success: true,
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      points: user.points,
-      ecoLevel: user.ecoLevel,
-    },
-  });
+  // Send token response
+  return sendTokenResponse(user, 201, res);
 });
 
 // @desc    Login user
@@ -89,21 +77,8 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  // Generate token
-  const token = user.getSignedJwtToken();
-
-  res.status(200).json({
-    success: true,
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      points: user.points,
-      ecoLevel: user.ecoLevel,
-    },
-  });
+  // Send token response
+  return sendTokenResponse(user, 200, res);
 });
 
 // @desc    Get current logged in user
@@ -118,8 +93,72 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Refresh token
+// @route   POST /api/v1/auth/refresh-token
+// @access  Public
+const refreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.cookies || req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({
+      success: false,
+      error: "No refresh token provided",
+    });
+  }
+
+  try {
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    // Find user
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid refresh token",
+      });
+    }
+
+    // Generate new access token
+    const newToken = generateToken(user._id);
+
+    return res.status(200).json({
+      success: true,
+      token: newToken,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid refresh token",
+    });
+  }
+});
+
+// @desc    Logout user / clear cookies
+// @route   GET /api/v1/auth/logout
+// @access  Private
+const logout = asyncHandler(async (req, res) => {
+  res.cookie("token", "none", {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+
+  res.cookie("refreshToken", "none", {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {},
+  });
+});
+
 module.exports = {
   register,
   login,
   getMe,
+  refreshToken,
+  logout,
 };
