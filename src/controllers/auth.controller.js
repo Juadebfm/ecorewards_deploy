@@ -1,3 +1,5 @@
+const jwt = require("jsonwebtoken");
+
 const asyncHandler = require("express-async-handler");
 const {
   registerValidation,
@@ -5,7 +7,6 @@ const {
 } = require("../validations/auth.validation");
 const User = require("../models/user.model");
 const { sendTokenResponse } = require("../utils/tokenUtils");
-const jwt = require("jsonwebtoken");
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
@@ -98,59 +99,13 @@ const getMe = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/auth/refresh-token
 // @access  Public
 const refreshToken = asyncHandler(async (req, res) => {
-  console.log("Refresh token request received");
-  console.log("Request body:", req.body);
+  console.log("REQUEST BODY:", JSON.stringify(req.body));
 
-  try {
-    // Get refresh token from cookie or request body
-    const token = req.cookies?.refreshToken || req.body?.refreshToken;
-    console.log("Extracted token:", token?.substring(0, 10) + "...");
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: "No refresh token provided",
-      });
-    }
-
-    try {
-      // Verify refresh token
-      const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-      console.log("Token decoded successfully:", decoded.id);
-
-      // Check if user exists
-      const user = await User.findById(decoded.id);
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: "Invalid refresh token - User not found",
-        });
-      }
-
-      // Generate new access token
-      const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE || "1h",
-      });
-
-      // Return new access token
-      return res.status(200).json({
-        success: true,
-        accessToken,
-      });
-    } catch (jwtError) {
-      console.error("JWT verification error:", jwtError);
-      return res.status(401).json({
-        success: false,
-        error: "Invalid refresh token - Verification failed",
-      });
-    }
-  } catch (error) {
-    console.error("Refresh token error:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Server error processing refresh token",
-    });
-  }
+  return res.status(200).json({
+    success: true,
+    message: "Refresh token endpoint working",
+    receivedData: req.body,
+  });
 });
 
 // @desc    Logout user / clear cookies
