@@ -11,32 +11,61 @@ const jwt = require("jsonwebtoken");
  *       required:
  *         - name
  *         - email
- *         - password
  *       properties:
  *         _id:
  *           type: string
  *           description: Auto-generated MongoDB ID
+ *         clerkId:
+ *           type: string
+ *           description: Unique identifier from Clerk authentication service
  *         name:
  *           type: string
- *           description: User's full name
+ *           description: User's full name (max 50 characters)
  *         email:
  *           type: string
  *           format: email
- *           description: User's unique email
+ *           description: User's unique email address
  *         password:
  *           type: string
- *           description: User's hashed password
+ *           description: User's hashed password (optional for social logins)
  *         role:
  *           type: string
  *           enum: [user, admin]
  *           default: user
+ *           description: User's role in the system
+ *         points:
+ *           type: number
+ *           default: 0
+ *           description: Eco points earned by the user
+ *         ecoLevel:
+ *           type: string
+ *           enum: [beginner, intermediate, advanced, expert, leader]
+ *           default: beginner
+ *           description: User's ecological expertise level based on points
+ *         resetPasswordToken:
+ *           type: string
+ *           description: Token for password reset functionality
+ *         resetPasswordExpire:
+ *           type: string
+ *           format: date-time
+ *           description: Expiration time for password reset token
  *         createdAt:
  *           type: string
  *           format: date-time
+ *           description: Timestamp when the user was created
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp when the user was last updated
  *       example:
  *         name: John Doe
  *         email: john@example.com
+ *         clerkId: user_2JHd72jd82j2d
  *         role: user
+ *         points: 275
+ *         ecoLevel: advanced
+ *         createdAt: "2025-05-10T15:46:51.778Z"
+ *         updatedAt: "2025-05-16T09:32:27.544Z"
  */
 
 const UserSchema = new mongoose.Schema(
