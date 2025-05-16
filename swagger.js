@@ -30,6 +30,57 @@ const swaggerOptions = {
           bearerFormat: "JWT",
         },
       },
+      // Add schema definitions for common request/response objects
+      schemas: {
+        RefreshTokenRequest: {
+          type: "object",
+          required: ["refreshToken"],
+          properties: {
+            refreshToken: {
+              type: "string",
+              description: "JWT refresh token",
+            },
+          },
+        },
+        TokenResponse: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              example: true,
+            },
+            accessToken: {
+              type: "string",
+              description: "JWT access token",
+            },
+            refreshToken: {
+              type: "string",
+              description: "JWT refresh token",
+            },
+            user: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                  description: "User ID",
+                },
+                name: {
+                  type: "string",
+                  description: "User's name",
+                },
+                email: {
+                  type: "string",
+                  description: "User's email",
+                },
+                role: {
+                  type: "string",
+                  description: "User's role",
+                },
+              },
+            },
+          },
+        },
+      },
     },
     security: [
       {
@@ -42,7 +93,7 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Create a custom Swagger UI HTML with CDN resources
+// Create a custom Swagger UI HTML with CDN resources and improved request handling
 const generateHTML = (options) => {
   return `
 <!DOCTYPE html>
@@ -63,6 +114,22 @@ const generateHTML = (options) => {
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.3.1/swagger-ui-standalone-preset.js"></script>
   <script>
     window.onload = function() {
+      // Custom request interceptor to ensure proper JSON formatting
+      const requestInterceptor = (request) => {
+        if (request.url.includes('/refresh-token') && request.body) {
+          try {
+            // Make sure the body is properly formatted JSON
+            if (typeof request.body === 'string') {
+              const parsedBody = JSON.parse(request.body);
+              request.body = JSON.stringify(parsedBody);
+            }
+          } catch (e) {
+            console.error('Error formatting request body:', e);
+          }
+        }
+        return request;
+      };
+      
       const ui = SwaggerUIBundle({
         spec: ${JSON.stringify(options.spec)},
         dom_id: '#swagger-ui',
@@ -74,7 +141,12 @@ const generateHTML = (options) => {
         plugins: [
           SwaggerUIBundle.plugins.DownloadUrl
         ],
-        layout: "StandaloneLayout"
+        layout: "StandaloneLayout",
+        requestInterceptor: requestInterceptor,
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1,
+        validatorUrl: null,
+        displayRequestDuration: true
       });
       window.ui = ui;
     };
@@ -99,6 +171,59 @@ const swaggerDocs = (app) => {
   app.get("/swagger.json", (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
+  });
+
+  app.get("/test-refresh-token", (req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Test Refresh Token</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .form-group { margin-bottom: 15px; }
+          label { display: block; margin-bottom: 5px; }
+          input[type="text"] { width: 100%; padding: 8px; }
+          button { padding: 10px 15px; background: #4CAF50; border: none; color: white; cursor: pointer; }
+          #result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; min-height: 100px; }
+        </style>
+      </head>
+      <body>
+        <h1>Test Refresh Token</h1>
+        <div class="form-group">
+          <label for="refresh-token">Refresh Token:</label>
+          <input type="text" id="refresh-token" placeholder="Enter your refresh token">
+        </div>
+        <button id="submit">Submit</button>
+        <div id="result">
+          <p>Results will appear here...</p>
+        </div>
+        
+        <script>
+          document.getElementById('submit').addEventListener('click', async () => {
+            const refreshToken = document.getElementById('refresh-token').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+              const response = await fetch('/api/v1/auth/refresh-token', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ refreshToken })
+              });
+              
+              const data = await response.json();
+              resultDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+              resultDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
   });
 };
 

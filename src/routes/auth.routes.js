@@ -158,13 +158,9 @@ router.get("/me", protect, getMe);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - refreshToken
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 description: The refresh token issued during login or registration
+ *             $ref: '#/components/schemas/RefreshTokenRequest'
+ *           example:
+ *             refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *     responses:
  *       200:
  *         description: Token refresh successful
@@ -181,8 +177,38 @@ router.get("/me", protect, getMe);
  *                   description: New JWT access token
  *       401:
  *         description: Invalid or expired refresh token
+ *       400:
+ *         description: Invalid request format
  */
-router.post("/refresh-token", refreshToken);
+
+router.post(
+  "/refresh-token",
+  (req, res, next) => {
+    // Special handling for the refresh token request
+    console.log("Refresh token request received, body:", req.body);
+
+    // If body is a string, try to parse it
+    if (typeof req.body === "string") {
+      try {
+        req.body = JSON.parse(req.body);
+        console.log("Parsed string body:", req.body);
+      } catch (e) {
+        console.error("Failed to parse string body:", e);
+      }
+    }
+
+    // If body is empty or doesn't have refreshToken, check for query param
+    if (!req.body || !req.body.refreshToken) {
+      if (req.query && req.query.refreshToken) {
+        req.body = { refreshToken: req.query.refreshToken };
+        console.log("Used query param for refreshToken");
+      }
+    }
+
+    next();
+  },
+  refreshToken
+);
 
 /**
  * @swagger

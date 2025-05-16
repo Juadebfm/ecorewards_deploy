@@ -99,13 +99,60 @@ const getMe = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/auth/refresh-token
 // @access  Public
 const refreshToken = asyncHandler(async (req, res) => {
-  console.log("REQUEST BODY:", JSON.stringify(req.body));
+  console.log("Processing refresh token request");
+  console.log("Request body:", typeof req.body, req.body);
 
-  return res.status(200).json({
-    success: true,
-    message: "Refresh token endpoint working",
-    receivedData: req.body,
-  });
+  try {
+    // Get refresh token from request
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: "No refresh token provided",
+      });
+    }
+
+    console.log("Token received:", token.substring(0, 10) + "...");
+
+    try {
+      // Verify refresh token
+      const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      console.log("Token verified, user id:", decoded.id);
+
+      // Find the user
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: "User not found",
+        });
+      }
+
+      // Generate new access token
+      const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE || "1h",
+      });
+
+      // Return the new access token
+      return res.status(200).json({
+        success: true,
+        accessToken,
+      });
+    } catch (error) {
+      console.error("Token verification error:", error.message);
+      return res.status(401).json({
+        success: false,
+        error: "Invalid refresh token",
+      });
+    }
+  } catch (error) {
+    console.error("Error processing refresh token:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
+  }
 });
 
 // @desc    Logout user / clear cookies
