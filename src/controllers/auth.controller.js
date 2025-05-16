@@ -97,40 +97,57 @@ const getMe = asyncHandler(async (req, res) => {
 // @route   POST /api/v1/auth/refresh-token
 // @access  Public
 const refreshToken = asyncHandler(async (req, res) => {
-  const { refreshToken } = req.cookies || req.body;
-
-  if (!refreshToken) {
-    return res.status(401).json({
-      success: false,
-      error: "No refresh token provided",
-    });
-  }
+  console.log("Refresh token request received");
+  console.log("Request body:", req.body);
 
   try {
-    // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    // Get refresh token from cookie or request body
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
+    console.log("Extracted token:", token?.substring(0, 10) + "...");
 
-    // Find user
-    const user = await User.findById(decoded.id);
-
-    if (!user) {
+    if (!token) {
       return res.status(401).json({
         success: false,
-        error: "Invalid refresh token",
+        error: "No refresh token provided",
       });
     }
 
-    // Generate new access token
-    const newToken = generateToken(user._id);
+    try {
+      // Verify refresh token
+      const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      console.log("Token decoded successfully:", decoded.id);
 
-    return res.status(200).json({
-      success: true,
-      token: newToken,
-    });
+      // Check if user exists
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid refresh token - User not found",
+        });
+      }
+
+      // Generate new access token
+      const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE || "1h",
+      });
+
+      // Return new access token
+      return res.status(200).json({
+        success: true,
+        accessToken,
+      });
+    } catch (jwtError) {
+      console.error("JWT verification error:", jwtError);
+      return res.status(401).json({
+        success: false,
+        error: "Invalid refresh token - Verification failed",
+      });
+    }
   } catch (error) {
-    return res.status(401).json({
+    console.error("Refresh token error:", error);
+    return res.status(500).json({
       success: false,
-      error: "Invalid refresh token",
+      error: "Server error processing refresh token",
     });
   }
 });

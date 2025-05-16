@@ -63,6 +63,18 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
+// Better error handling for JSON parsing
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    console.error("JSON Parse Error:", err.message);
+    return res.status(400).json({
+      success: false,
+      error: "Invalid JSON in request body",
+    });
+  }
+  next(err);
+});
+
 // Mount routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/auth/clerk", clerkRoutes);
