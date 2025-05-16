@@ -13,9 +13,7 @@ dotenv.config();
 // Import database connection
 const connectDB = require("./src/config/db");
 
-// Connect to database
-connectDB();
-
+// Create Express app
 const app = express();
 
 // Body parser
@@ -26,9 +24,6 @@ app.use(cors());
 
 // Set security HTTP headers
 app.use(helmet());
-
-// Error handler middleware
-app.use(errorHandler);
 
 // Mount routes
 app.use("/api/v1/auth", authRoutes);
@@ -44,15 +39,30 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to Eco Rewards API" });
 });
 
-const PORT = process.env.PORT || 5000;
+// Error handler middleware - moved after routes
+app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// Connect to database when needed
+if (process.env.NODE_ENV !== "test") {
+  connectDB().catch((err) => console.error("Database connection error:", err));
+}
 
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (err) => {
-  console.log(`Error: ${err.message}`);
-});
+// Only start the server when running directly (not in serverless)
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  const server = app.listen(PORT, () => {
+    console.log(
+      `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
+    );
+  });
 
-module.exports = server;
+  // Handle unhandled promise rejections
+  process.on("unhandledRejection", (err) => {
+    console.log(`Error: ${err.message}`);
+    // Close server & exit process
+    server.close(() => process.exit(1));
+  });
+}
+
+// Export the Express app for serverless use
+module.exports = app;
