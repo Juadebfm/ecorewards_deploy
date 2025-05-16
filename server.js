@@ -6,7 +6,7 @@ const morgan = require("morgan");
 const { errorHandler } = require("./src/middleware/error.middleware");
 const authRoutes = require("./src/routes/auth.routes");
 const clerkRoutes = require("./src/routes/clerk.routes");
-const { swaggerDocs } = require("./swagger"); // Import the swagger config
+const { swaggerDocs } = require("./swagger"); 
 
 // Load env vars
 dotenv.config();
@@ -24,7 +24,13 @@ app.use(express.json());
 app.use(cors());
 
 // Set security HTTP headers
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
+
+swaggerDocs(app);
 
 // Mount routes
 app.use("/api/v1/auth", authRoutes);
