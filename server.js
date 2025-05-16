@@ -6,7 +6,7 @@ const morgan = require("morgan");
 const { errorHandler } = require("./src/middleware/error.middleware");
 const authRoutes = require("./src/routes/auth.routes");
 const clerkRoutes = require("./src/routes/clerk.routes");
-const { swaggerDocs } = require("./swagger"); 
+const { swaggerDocs } = require("./swagger");
 
 // Load env vars
 dotenv.config();
@@ -26,7 +26,15 @@ app.use(cors());
 // Set security HTTP headers
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+        styleSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+      },
+    },
   })
 );
 
