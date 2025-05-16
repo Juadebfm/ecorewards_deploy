@@ -6,6 +6,7 @@ const morgan = require("morgan");
 const { errorHandler } = require("./src/middleware/error.middleware");
 const authRoutes = require("./src/routes/auth.routes");
 const clerkRoutes = require("./src/routes/clerk.routes");
+const { swaggerDocs } = require("./swagger"); // Import the swagger config
 
 // Load env vars
 dotenv.config();
@@ -39,7 +40,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to Eco Rewards API" });
 });
 
-// Error handler middleware - moved after routes
+// Error handler middleware - after routes
 app.use(errorHandler);
 
 // Connect to database when needed
@@ -54,14 +55,18 @@ if (process.env.NODE_ENV !== "production") {
     console.log(
       `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
     );
+    // Initialize Swagger
+    swaggerDocs(app, PORT);
   });
 
   // Handle unhandled promise rejections
   process.on("unhandledRejection", (err) => {
     console.log(`Error: ${err.message}`);
-    // Close server & exit process
     server.close(() => process.exit(1));
   });
+} else {
+  // In production (serverless), still set up Swagger
+  swaggerDocs(app, process.env.PORT || 5000);
 }
 
 // Export the Express app for serverless use
