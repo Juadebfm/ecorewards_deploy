@@ -38,16 +38,31 @@ app.use(
   })
 );
 
+// Set up Swagger docs
 swaggerDocs(app);
 
-// Mount routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/auth/clerk", clerkRoutes);
+// Add middleware to ensure database connection before processing requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Database connection failed",
+    });
+  }
+});
 
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+// Mount routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth/clerk", clerkRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -57,11 +72,6 @@ app.get("/", (req, res) => {
 // Error handler middleware - after routes
 app.use(errorHandler);
 
-// Connect to database when needed
-if (process.env.NODE_ENV !== "test") {
-  connectDB().catch((err) => console.error("Database connection error:", err));
-}
-
 // Only start the server when running directly (not in serverless)
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
@@ -69,8 +79,6 @@ if (process.env.NODE_ENV !== "production") {
     console.log(
       `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
     );
-    // Initialize Swagger
-    swaggerDocs(app, PORT);
   });
 
   // Handle unhandled promise rejections
@@ -78,9 +86,6 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`Error: ${err.message}`);
     server.close(() => process.exit(1));
   });
-} else {
-  // In production (serverless), still set up Swagger
-  swaggerDocs(app, process.env.PORT || 5000);
 }
 
 // Export the Express app for serverless use

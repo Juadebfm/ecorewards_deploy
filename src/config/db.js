@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Cache the database connection
 let cached = global.mongoose;
 
 if (!cached) {
@@ -13,7 +14,7 @@ const connectDB = async () => {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false,
+      bufferCommands: true,
     };
 
     cached.promise = mongoose
@@ -29,9 +30,6 @@ const connectDB = async () => {
     return cached.conn;
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
-    // In serverless, we typically don't want to exit the process
-    // as it can cause cold starts on subsequent requests
-    // Instead, let the error bubble up to be handled
     throw error;
   }
 };
