@@ -3,28 +3,37 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
 const { errorHandler } = require("./src/middleware/error.middleware");
 const authRoutes = require("./src/routes/auth.routes");
 const clerkRoutes = require("./src/routes/clerk.routes");
 const { swaggerDocs } = require("./swagger");
-const cookieParser = require("cookie-parser");
 
-// Load env vars
+// Load environment variables
 dotenv.config();
 
 // Import database connection
 const connectDB = require("./src/config/db");
 
-// Create Express app
+// Initialize Express app
 const app = express();
 
-// Body parser
-app.use(express.json());
+// ===== MIDDLEWARE SECTION =====
 
-app.use(cookieParser());
+// 1. Basic middleware
+app.use(express.json()); // Parse JSON bodies
+app.use(cookieParser()); // Parse cookies
 
-// Enable CORS
-app.use(cors());
+// 2. Security middleware
+// CORS configuration - more permissive for development
+app.use(
+  cors({
+    origin: true, // Allow all origins
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true, // Allow cookies
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // Set security HTTP headers
 app.use(
@@ -41,10 +50,12 @@ app.use(
   })
 );
 
-// Set up Swagger docs
-swaggerDocs(app);
+// 3. Logging middleware (only in development)
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
-// Add middleware to ensure database connection before processing requests
+// 4. Database connection middleware
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -58,12 +69,23 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Dev logging middleware
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
+// 5. Set up Swagger documentation
+swaggerDocs(app);
 
-// Better error handling for JSON parsing
+// ===== ROUTES SECTION =====
+
+// Root route
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to Eco Rewards API" });
+});
+
+// API routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth/clerk", clerkRoutes);
+
+// ===== ERROR HANDLING SECTION =====
+
+// Handle JSON parsing errors
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     console.error("JSON Parse Error:", err.message);
@@ -75,19 +97,12 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Mount routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/auth/clerk", clerkRoutes);
-
-// Root route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to Eco Rewards API" });
-});
-
-// Error handler middleware - after routes
+// General error handler - must be last
 app.use(errorHandler);
 
-// Only start the server when running directly (not in serverless)
+// ===== SERVER STARTUP SECTION =====
+
+// Start server in non-production environments
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   const server = app.listen(PORT, () => {
@@ -98,9 +113,12 @@ if (process.env.NODE_ENV !== "production") {
 
   // Handle unhandled promise rejections
   process.on("unhandledRejection", (err) => {
-    console.log(`Error: ${err.message}`);
+    console.error(`Error: ${err.message}`);
     server.close(() => process.exit(1));
   });
+} else {
+  // In production, Vercel will handle the server startup
+  console.log("Server configured for production");
 }
 
 // Export the Express app for serverless use

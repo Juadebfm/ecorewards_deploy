@@ -5,6 +5,7 @@ const {
 } = require("../validations/auth.validation");
 const User = require("../models/user.model");
 const { sendTokenResponse } = require("../utils/tokenUtils");
+const jwt = require("jsonwebtoken");
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
