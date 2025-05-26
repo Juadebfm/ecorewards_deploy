@@ -42,6 +42,28 @@ const jwt = require("jsonwebtoken");
  *           enum: [beginner, intermediate, advanced, expert, leader]
  *           default: beginner
  *           description: User's ecological expertise level based on points
+ *         claimedRewards:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               rewardId:
+ *                 type: string
+ *                 description: Reference to claimed reward
+ *               qrCodeId:
+ *                 type: string
+ *                 description: Reference to QR code used
+ *               pointsAwarded:
+ *                 type: number
+ *                 description: Points received for this claim
+ *               claimedAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: When the reward was claimed
+ *           description: Array of rewards claimed by the user
+ *         referralCode:
+ *           type: string
+ *           description: Unique referral code for the user
  *         resetPasswordToken:
  *           type: string
  *           description: Token for password reset functionality
@@ -64,6 +86,8 @@ const jwt = require("jsonwebtoken");
  *         role: user
  *         points: 275
  *         ecoLevel: advanced
+ *         claimedRewards: []
+ *         referralCode: "ECO_JOHN123"
  *         createdAt: "2025-05-10T15:46:51.778Z"
  *         updatedAt: "2025-05-16T09:32:27.544Z"
  */
@@ -111,6 +135,34 @@ const UserSchema = new mongoose.Schema(
       enum: ["beginner", "intermediate", "advanced", "expert", "leader"],
       default: "beginner",
     },
+    claimedRewards: [
+      {
+        rewardId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Reward",
+        },
+        qrCodeId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "QRCode",
+        },
+        pointsAwarded: Number,
+        claimedAt: Date,
+      },
+    ],
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: function () {
+        return `ECO_${this.name
+          .toUpperCase()
+          .replace(/\s+/g, "")
+          .substring(0, 4)}${Math.random()
+          .toString(36)
+          .substr(2, 6)
+          .toUpperCase()}`;
+      },
+    },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
@@ -118,6 +170,10 @@ const UserSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Add index for claimed rewards for better query performance
+UserSchema.index({ "claimedRewards.rewardId": 1 });
+UserSchema.index({ referralCode: 1 });
 
 // Encrypt password only if it exists
 UserSchema.pre("save", async function (next) {
@@ -159,6 +215,32 @@ UserSchema.methods.updateEcoLevel = function () {
   }
 
   return this.ecoLevel;
+};
+
+// Get user's claim count for a specific reward
+UserSchema.methods.getClaimCountForReward = function (rewardId) {
+  return this.claimedRewards.filter(
+    (claim) => claim.rewardId.toString() === rewardId.toString()
+  ).length;
+};
+
+// Check if user has claimed a specific QR code
+UserSchema.methods.hasClaimedQRCode = function (qrCodeId) {
+  return this.claimedRewards.some(
+    (claim) => claim.qrCodeId.toString() === qrCodeId.toString()
+  );
+};
+
+// Get user's total rewards claimed
+UserSchema.methods.getTotalRewardsClaimed = function () {
+  return this.claimedRewards.length;
+};
+
+// Get user's recent claims
+UserSchema.methods.getRecentClaims = function (limit = 5) {
+  return this.claimedRewards
+    .sort((a, b) => new Date(b.claimedAt) - new Date(a.claimedAt))
+    .slice(0, limit);
 };
 
 module.exports = mongoose.model("User", UserSchema);
