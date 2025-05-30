@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const QRCode = require("../models/qrCode.model");
+const QRCode = require("../models/qrcode.model");
 const Partner = require("../models/partner.model");
 const Reward = require("../models/reward.model");
 const RewardClaim = require("../models/rewardclaim.model");
