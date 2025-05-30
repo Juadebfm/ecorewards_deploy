@@ -113,7 +113,7 @@ console.log("🐛 Node environment:", process.env.NODE_ENV);
 
 try {
   // Test if the file exists and can be required
-  const qrRoutes = require("./src/routes/qr.routes");
+  const qrRoutes = require("./src/routes/qr.routes.simple");
   console.log("✅ QR routes file loaded successfully");
   console.log("🐛 QR routes type:", typeof qrRoutes);
 
@@ -178,15 +178,6 @@ app.get("/api/v1/debug/routes", (req, res) => {
     }
   });
   res.json({ routes });
-});
-
-// Test route to verify /api/v1/qr path works
-app.post("/api/v1/qr/test", (req, res) => {
-  res.json({
-    success: true,
-    message: "QR test route works",
-    body: req.body,
-  });
 });
 
 // 404 handler
