@@ -1,12 +1,19 @@
 const express = require("express");
+const {
+  generateQRCode,
+} = require("../controllers/qr.controller");
+const {
+  protect,
+  authorize,
+} = require("../middleware/auth.middleware");
+
 const router = express.Router();
 
-// Test 1: Simple route with no imports
 router.post("/generate", (req, res) => {
   res.json({
     success: true,
-    message: "QR generate works - no middleware",
-    body: req.body,
+    message: "QR generate works with controller imported",
+    body: req.body
   });
 });
 
