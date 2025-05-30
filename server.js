@@ -107,14 +107,18 @@ try {
   console.error("❌ Error loading reward routes:", error.message);
 }
 
+// Replace your QR routes loading section with this:
 console.log("🐛 Loading QR routes...");
+console.log("🐛 Current working directory:", process.cwd());
+console.log("🐛 Node environment:", process.env.NODE_ENV);
 try {
   const qrRoutes = require("./src/routes/qr.routes");
   app.use("/api/v1/qr", qrRoutes);
   console.log("✅ QR routes loaded successfully");
+  console.log("✅ QR routes mounted at: /api/v1/qr");
 } catch (error) {
   console.error("❌ Error loading QR routes:", error.message);
-  console.error("❌ QR routes error details:", error);
+  console.error("❌ QR routes error stack:", error.stack);
 }
 
 console.log("🐛 Loading claim routes...");
