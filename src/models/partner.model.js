@@ -206,7 +206,7 @@ PartnerSchema.index({ email: 1 });
 PartnerSchema.index({ verificationStatus: 1, isActive: 1 });
 PartnerSchema.index({ category: 1 });
 // For text search
-PartnerSchema.index({ name: "text", description: "text" }); 
+PartnerSchema.index({ name: "text", description: "text" });
 
 // Instance method to check if partner is verified and active
 PartnerSchema.methods.isEligibleForRewards = function () {
@@ -242,4 +242,5 @@ PartnerSchema.statics.getPartnersByCategory = function (category) {
   }).sort({ totalScans: -1 });
 };
 
-module.exports = mongoose.model("Partner", PartnerSchema);
+module.exports =
+  mongoose.models.Partner || mongoose.model("Partner", PartnerSchema);

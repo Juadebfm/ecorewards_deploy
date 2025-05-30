@@ -452,4 +452,6 @@ RewardClaimSchema.pre("save", async function (next) {
   next();
 });
 
-module.exports = mongoose.model("RewardClaim", RewardClaimSchema);
+module.exports =
+  mongoose.models.RewardClaim ||
+  mongoose.model("RewardClaim", RewardClaimSchema);

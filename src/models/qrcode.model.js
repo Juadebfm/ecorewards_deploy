@@ -176,10 +176,8 @@ const QRCodeSchema = new mongoose.Schema(
 );
 
 // Indexes for better query performance
-QRCodeSchema.index({ qrCode: 1 }, { unique: true });
 QRCodeSchema.index({ partnerId: 1, isActive: 1 });
 QRCodeSchema.index({ rewardId: 1, isActive: 1 });
-QRCodeSchema.index({ batchId: 1 });
 QRCodeSchema.index({ scanCount: -1 });
 QRCodeSchema.index({ lastScannedAt: -1 });
 // For geospatial queries
@@ -328,4 +326,5 @@ QRCodeSchema.statics.findByLocation = function (
     .populate("rewardId", "title points category");
 };
 
-module.exports = mongoose.model("QRCode", QRCodeSchema);
+module.exports =
+  mongoose.models.QRCode || mongoose.model("QRCode", QRCodeSchema);

@@ -173,7 +173,6 @@ const UserSchema = new mongoose.Schema(
 
 // Add index for claimed rewards for better query performance
 UserSchema.index({ "claimedRewards.rewardId": 1 });
-UserSchema.index({ referralCode: 1 });
 
 // Encrypt password only if it exists
 UserSchema.pre("save", async function (next) {
@@ -243,4 +242,4 @@ UserSchema.methods.getRecentClaims = function (limit = 5) {
     .slice(0, limit);
 };
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.models.User || mongoose.model("User", UserSchema);

@@ -5,11 +5,8 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const { errorHandler } = require("./src/middleware/error.middleware");
-const authRoutes = require("./src/routes/auth.routes");
-const clerkRoutes = require("./src/routes/clerk.routes");
-const { swaggerDocs } = require("./swagger");
 
-// Load environment variables
+// Load environment variables first
 dotenv.config();
 
 // Import database connection
@@ -18,24 +15,20 @@ const connectDB = require("./src/config/db");
 // Initialize Express app
 const app = express();
 
+console.log("🐛 Starting server with debugging...");
+
 // ===== MIDDLEWARE SECTION =====
-
-// 1. Basic middleware
-app.use(express.json()); // Parse JSON bodies
-app.use(cookieParser()); // Parse cookies
-
-// 2. Security middleware
-// CORS configuration - more permissive for development
+app.use(express.json());
+app.use(cookieParser());
 app.use(
   cors({
-    origin: true, // Allow all origins
+    origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true, // Allow cookies
+    credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Set security HTTP headers
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -50,12 +43,11 @@ app.use(
   })
 );
 
-// 3. Logging middleware (only in development)
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// 4. Database connection middleware
+// Database middleware
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -69,26 +61,91 @@ app.use(async (req, res, next) => {
   }
 });
 
-// 5. Set up Swagger documentation
-swaggerDocs(app);
-
-// ===== ROUTES SECTION =====
-
 // Root route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to Eco Rewards API" });
+  res.json({
+    message: "Welcome to Eco Rewards API",
+    version: "1.0.0",
+  });
 });
 
-// API routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/auth/clerk", clerkRoutes);
+// ===== ROUTE MOUNTING WITH DEBUGGING =====
 
-// ===== ERROR HANDLING SECTION =====
+console.log("🐛 Loading auth routes...");
+try {
+  const authRoutes = require("./src/routes/auth.routes");
+  app.use("/api/v1/auth", authRoutes);
+  console.log("✅ Auth routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading auth routes:", error.message);
+}
 
-// Handle JSON parsing errors
+console.log("🐛 Loading clerk routes...");
+try {
+  const clerkRoutes = require("./src/routes/clerk.routes");
+  app.use("/api/v1/auth/clerk", clerkRoutes);
+  console.log("✅ Clerk routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading clerk routes:", error.message);
+}
+
+console.log("🐛 Loading partner routes...");
+try {
+  const partnerRoutes = require("./src/routes/partner.routes");
+  app.use("/api/v1/partners", partnerRoutes);
+  console.log("✅ Partner routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading partner routes:", error.message);
+}
+
+console.log("🐛 Loading reward routes...");
+try {
+  const rewardRoutes = require("./src/routes/reward.routes");
+  app.use("/api/v1/rewards", rewardRoutes);
+  console.log("✅ Reward routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading reward routes:", error.message);
+}
+
+console.log("🐛 Loading QR routes...");
+try {
+  const qrRoutes = require("./src/routes/qr.routes");
+  app.use("/api/v1/qr", qrRoutes);
+  console.log("✅ QR routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading QR routes:", error.message);
+  console.error("❌ QR routes error details:", error);
+}
+
+console.log("🐛 Loading claim routes...");
+try {
+  const claimRoutes = require("./src/routes/claim.routes");
+  app.use("/api/v1/claim", claimRoutes);
+  console.log("✅ Claim routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading claim routes:", error.message);
+}
+
+// Status route
+app.get("/api/v1/status", (req, res) => {
+  res.json({
+    success: true,
+    message: "Eco Rewards API is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.originalUrl} not found`,
+  });
+});
+
+// Error handlers
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
-    console.error("JSON Parse Error:", err.message);
     return res.status(400).json({
       success: false,
       error: "Invalid JSON in request body",
@@ -97,29 +154,19 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// General error handler - must be last
 app.use(errorHandler);
 
-// ===== SERVER STARTUP SECTION =====
-
-// Start server in non-production environments
+// Start server
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   const server = app.listen(PORT, () => {
-    console.log(
-      `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
-    );
+    console.log(`✅ Server running on port ${PORT}`);
   });
 
-  // Handle unhandled promise rejections
   process.on("unhandledRejection", (err) => {
     console.error(`Error: ${err.message}`);
     server.close(() => process.exit(1));
   });
-} else {
-  // In production, Vercel will handle the server startup
-  console.log("Server configured for production");
 }
 
-// Export the Express app for serverless use
 module.exports = app;

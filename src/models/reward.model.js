@@ -303,4 +303,5 @@ RewardSchema.pre("save", async function (next) {
   next();
 });
 
-module.exports = mongoose.model("Reward", RewardSchema);
+module.exports =
+  mongoose.models.Reward || mongoose.model("Reward", RewardSchema);

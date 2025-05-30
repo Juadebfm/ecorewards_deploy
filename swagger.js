@@ -30,7 +30,6 @@ const swaggerOptions = {
           bearerFormat: "JWT",
         },
       },
-      // Add schema definitions for common request/response objects
       schemas: {
         RefreshTokenRequest: {
           type: "object",
@@ -88,10 +87,59 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ["./src/routes/*.js", "./src/models/*.js"],
+  // Parse route files one by one to catch any problematic files
+  apis: [
+    "./src/routes/auth.routes.js",
+    "./src/routes/clerk.routes.js",
+    "./src/routes/partner.routes.js",
+    "./src/routes/reward.routes.js",
+    "./src/routes/qr.routes.js",
+    "./src/routes/claim.routes.js",
+    // Only include models if they have Swagger comments
+    // "./src/models/*.js"
+  ],
 };
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
+// Wrap swagger spec generation in try-catch to identify problematic files
+let swaggerSpec;
+try {
+  swaggerSpec = swaggerJsdoc(swaggerOptions);
+  console.log("✅ Swagger spec generated successfully");
+} catch (error) {
+  console.error("❌ Error generating Swagger spec:", error);
+
+  // Try to identify which file is causing the issue
+  const files = [
+    "./src/routes/auth.routes.js",
+    "./src/routes/clerk.routes.js",
+    "./src/routes/partner.routes.js",
+    "./src/routes/reward.routes.js",
+    "./src/routes/qr.routes.js",
+    "./src/routes/claim.routes.js",
+  ];
+
+  console.log("🔍 Testing individual files...");
+  for (const file of files) {
+    try {
+      const testSpec = swaggerJsdoc({
+        definition: swaggerOptions.definition,
+        apis: [file],
+      });
+      console.log(`✅ ${file} - OK`);
+    } catch (fileError) {
+      console.log(`❌ ${file} - ERROR:`, fileError.message);
+    }
+  }
+
+  // Create a minimal spec as fallback
+  swaggerSpec = {
+    openapi: "3.0.0",
+    info: swaggerOptions.definition.info,
+    servers: swaggerOptions.definition.servers,
+    paths: {},
+    components: swaggerOptions.definition.components,
+  };
+}
 
 // Create a custom Swagger UI HTML with CDN resources and improved request handling
 const generateHTML = (options) => {
@@ -114,11 +162,9 @@ const generateHTML = (options) => {
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.3.1/swagger-ui-standalone-preset.js"></script>
   <script>
     window.onload = function() {
-      // Custom request interceptor to ensure proper JSON formatting
       const requestInterceptor = (request) => {
         if (request.url.includes('/refresh-token') && request.body) {
           try {
-            // Make sure the body is properly formatted JSON
             if (typeof request.body === 'string') {
               const parsedBody = JSON.parse(request.body);
               request.body = JSON.stringify(parsedBody);
