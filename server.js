@@ -107,15 +107,33 @@ try {
   console.error("❌ Error loading reward routes:", error.message);
 }
 
-// Replace your QR routes loading section with this:
 console.log("🐛 Loading QR routes...");
 console.log("🐛 Current working directory:", process.cwd());
 console.log("🐛 Node environment:", process.env.NODE_ENV);
+
 try {
+  // Test if the file exists and can be required
   const qrRoutes = require("./src/routes/qr.routes");
+  console.log("✅ QR routes file loaded successfully");
+  console.log("🐛 QR routes type:", typeof qrRoutes);
+
+  // Mount the routes
   app.use("/api/v1/qr", qrRoutes);
-  console.log("✅ QR routes loaded successfully");
   console.log("✅ QR routes mounted at: /api/v1/qr");
+
+  // List all routes after mounting
+  console.log("🐛 All registered routes:");
+  app._router.stack.forEach((layer, index) => {
+    if (layer.route) {
+      console.log(
+        `  ${index}: ${Object.keys(layer.route.methods)[0].toUpperCase()} ${
+          layer.route.path
+        }`
+      );
+    } else if (layer.name === "router") {
+      console.log(`  ${index}: Router middleware - ${layer.regexp}`);
+    }
+  });
 } catch (error) {
   console.error("❌ Error loading QR routes:", error.message);
   console.error("❌ QR routes error stack:", error.stack);
@@ -160,6 +178,15 @@ app.get("/api/v1/debug/routes", (req, res) => {
     }
   });
   res.json({ routes });
+});
+
+// Test route to verify /api/v1/qr path works
+app.post("/api/v1/qr/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "QR test route works",
+    body: req.body,
+  });
 });
 
 // 404 handler
