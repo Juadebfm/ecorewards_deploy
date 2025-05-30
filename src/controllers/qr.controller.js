@@ -241,7 +241,7 @@ const generateBulkQRCodes = asyncHandler(async (req, res) => {
         id: qr._id,
         qrCode: qr.qrCode,
         scanUrl: `${
-          process.env.FRONTEND_URL || "https://yourplatform.com"
+          process.env.FRONTEND_URL || "https://eco-rewards-sooty.vercel.app/"
         }/scan/${qr.qrCode}`,
       })),
     },
@@ -347,7 +347,7 @@ const getQRCodesByBatch = asyncHandler(async (req, res) => {
       qrCodes: qrCodes.map((qr) => ({
         ...qr.toObject(),
         scanUrl: `${
-          process.env.FRONTEND_URL || "https://yourplatform.com"
+          process.env.FRONTEND_URL || "https://eco-rewards-sooty.vercel.app/"
         }/scan/${qr.qrCode}`,
         conversionRate: qr.conversionRate,
       })),
@@ -432,9 +432,9 @@ const getTopPerformingQRCodes = asyncHandler(async (req, res) => {
 
   const enrichedQRCodes = qrCodes.map((qr) => ({
     ...qr.toObject(),
-    scanUrl: `${process.env.FRONTEND_URL || "https://repo.com"}/scan/${
-      qr.qrCode
-    }`,
+    scanUrl: `${
+      process.env.FRONTEND_URL || "https://eco-rewards-sooty.vercel.app/"
+    }/scan/${qr.qrCode}`,
     conversionRate: qr.conversionRate,
   }));
 

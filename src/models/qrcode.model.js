@@ -194,9 +194,10 @@ QRCodeSchema.virtual("scanUrl").get(function () {
   let baseUrl;
 
   if (process.env.NODE_ENV === "production") {
-    baseUrl = process.env.FRONTEND_URL || "https://repo.com";
+    baseUrl =
+      process.env.FRONTEND_URL || "https://eco-rewards-sooty.vercel.app/";
   } else {
-    baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   }
 
   return `${baseUrl}/scan/${this.qrCode}`;

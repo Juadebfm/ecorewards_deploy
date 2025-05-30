@@ -135,6 +135,29 @@ app.get("/api/v1/status", (req, res) => {
   });
 });
 
+// Add this after all your route mounting
+app.get("/api/v1/debug/routes", (req, res) => {
+  const routes = [];
+  app._router.stack.forEach(function (r) {
+    if (r.route && r.route.path) {
+      routes.push({
+        method: Object.keys(r.route.methods)[0].toUpperCase(),
+        path: r.route.path,
+      });
+    } else if (r.name === "router") {
+      r.handle.stack.forEach(function (rr) {
+        if (rr.route) {
+          routes.push({
+            method: Object.keys(rr.route.methods)[0].toUpperCase(),
+            path: rr.route.path,
+          });
+        }
+      });
+    }
+  });
+  res.json({ routes });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
