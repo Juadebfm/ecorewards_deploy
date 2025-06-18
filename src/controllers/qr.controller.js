@@ -433,7 +433,7 @@ const getTopPerformingQRCodes = asyncHandler(async (req, res) => {
   const enrichedQRCodes = qrCodes.map((qr) => ({
     ...qr.toObject(),
     scanUrl: `${
-      process.env.FRONTEND_URL || "https://eco-rewards-sooty.vercel.app/"
+      process.env.FRONTEND_URL || "https://react-tester.vercel.app/"
     }/scan/${qr.qrCode}`,
     conversionRate: qr.conversionRate,
   }));
