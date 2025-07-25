@@ -1,96 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       required:
- *         - name
- *         - email
- *       properties:
- *         _id:
- *           type: string
- *           description: Auto-generated MongoDB ID
- *         clerkId:
- *           type: string
- *           description: Unique identifier from Clerk authentication service
- *         name:
- *           type: string
- *           description: User's full name (max 50 characters)
- *         email:
- *           type: string
- *           format: email
- *           description: User's unique email address
- *         password:
- *           type: string
- *           description: User's hashed password (optional for social logins)
- *         role:
- *           type: string
- *           enum: [user, admin]
- *           default: user
- *           description: User's role in the system
- *         points:
- *           type: number
- *           default: 0
- *           description: Eco points earned by the user
- *         ecoLevel:
- *           type: string
- *           enum: [beginner, intermediate, advanced, expert, leader]
- *           default: beginner
- *           description: User's ecological expertise level based on points
- *         claimedRewards:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               rewardId:
- *                 type: string
- *                 description: Reference to claimed reward
- *               qrCodeId:
- *                 type: string
- *                 description: Reference to QR code used
- *               pointsAwarded:
- *                 type: number
- *                 description: Points received for this claim
- *               claimedAt:
- *                 type: string
- *                 format: date-time
- *                 description: When the reward was claimed
- *           description: Array of rewards claimed by the user
- *         referralCode:
- *           type: string
- *           description: Unique referral code for the user
- *         resetPasswordToken:
- *           type: string
- *           description: Token for password reset functionality
- *         resetPasswordExpire:
- *           type: string
- *           format: date-time
- *           description: Expiration time for password reset token
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: Timestamp when the user was created
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           description: Timestamp when the user was last updated
- *       example:
- *         name: John Doe
- *         email: john@example.com
- *         clerkId: user_2JHd72jd82j2d
- *         role: user
- *         points: 275
- *         ecoLevel: advanced
- *         claimedRewards: []
- *         referralCode: "ECO_JOHN123"
- *         createdAt: "2025-05-10T15:46:51.778Z"
- *         updatedAt: "2025-05-16T09:32:27.544Z"
- */
+const crypto = require("crypto");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -126,6 +37,14 @@ const UserSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    // EMAIL VERIFICATION FIELDS
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: String,
+    emailVerificationExpire: Date,
+    // END EMAIL VERIFICATION FIELDS
     points: {
       type: Number,
       default: 0,
@@ -195,6 +114,23 @@ UserSchema.methods.getSignedJwtToken = function () {
 // Match user entered password to hashed password in database
 UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate and hash email verification token
+UserSchema.methods.getEmailVerificationToken = function () {
+  // Generate token
+  const verificationToken = crypto.randomBytes(20).toString("hex");
+
+  // Hash token and set to emailVerificationToken field
+  this.emailVerificationToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  // Set expire time (24 hours)
+  this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+
+  return verificationToken;
 };
 
 // Update eco level based on points
