@@ -7,7 +7,7 @@ const createTransporter = () => {
 
   if (process.env.NODE_ENV === "production") {
     // Production configuration (example with SendGrid)
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       service: "SendGrid",
       auth: {
         user: process.env.SENDGRID_USERNAME,
@@ -16,7 +16,7 @@ const createTransporter = () => {
     });
   } else {
     // Development configuration (example with Gmail)
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_FROM,
