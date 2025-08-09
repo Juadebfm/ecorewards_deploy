@@ -1,3 +1,5 @@
 node_modules
 test_react_clerk.env
 .env
+
+.vercel

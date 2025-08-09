@@ -26,13 +26,21 @@ app.use(
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:5174",
-      "https://your-app.vercel.app",
+      "https://eco-rewards-master.vercel.app/",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  if (req.method === "OPTIONS") {
+    console.log("OPTIONS request received");
+  }
+  next();
+});
 
 app.use(
   helmet({
@@ -81,6 +89,23 @@ try {
   const authRoutes = require("./src/routes/auth.routes");
   app.use("/api/v1/auth", authRoutes);
   console.log("✅ Auth routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading auth routes:", error.message);
+}
+
+// Add this with your other route imports
+try {
+  const activityRoutes = require("./src/routes/activity.routes");
+  app.use("/api/v1/activities", activityRoutes);
+  console.log("✅ Activity routes loaded successfully");
+} catch (error) {
+  console.error("❌ Error loading activity routes:", error.message);
+}
+
+try {
+  const leaderboardRoutes = require("./src/routes/leaderboard.routes");
+  app.use("/api/v1/leaderboard", leaderboardRoutes);
+  console.log("✅ Leaderboard routes loaded successfully");
 } catch (error) {
   console.error("❌ Error loading auth routes:", error.message);
 }
